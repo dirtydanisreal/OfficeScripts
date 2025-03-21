@@ -1,1 +1,96 @@
-{"version":"0.3.0","body":"function main(workbook: ExcelScript.Workbook) {\n  let pm = workbook.getWorksheet(\"PATIENT_MAKER\");\n  const protection = pm.getProtection();\n\n  // Pause protection\n  protection.pauseProtection(\"imsorrydave\");\n\n  // Formulas for different cells\n  const formulas = [\n    { range: \"C1\", formula: '=UPPER(CONCATENATE(IF(K4=\"Yes\", \"XXXXX\", TRIM(I2))))' },\n    { range: \"A1\", formula: '=UPPER(CONCATENATE(IF(K4=\"Yes\", \"XXXXX\", TRIM(I2))))' },\n    { range: \"A2\", formula: '=I10' },\n    { range: \"B2\", formula: '=IF(I9>9,CONCATENATE(\"A.\",I9),CONCATENATE(\"A.0\",I9))' },\n    { range: \"C2\", formula: '=IF(K8=\"2CDU\",\"2CDU\",IF(K8=\"A\",IF(I9>9,CONCATENATE(\"A.\",I9),CONCATENATE(\"A.0\",I9)),CONCATENATE(K8,\".0\",I9)))' },\n    { range: \"C3\", formula: '=I10' },\n    { range: \"D8\", formula: '=UPPER(CONCATENATE(IF(K4=\"Yes\", \"XXXXX\", I2), \", \", IF(K4=\"Yes\", \"X\", LEFT(I3,1))))' },\n    { range: \"D9\", formula: '=IF(I6<>\"\",UPPER(CONCATENATE(I4,\" / TEAM \",I6 )),UPPER(I4))' },\n    {range: \"D10\", formula: '=UPPER(I5)'},\n    { range: \"A10\", formula: '=UPPER(\"ATTENDING\")' },\n    { range: \"A4\", formula: '=IF(K2<>\"No\",J31,\"\")' },\n    { range: \"C4\", formula: '=IF(K2<>\"No\",J31,\"\")' },\n    { range: \"F8\", formula: '=IF(K2<>\"No\",J31,\"\")' },\n    { range: \"F2\", formula: '=IFS(K3=\"SPA\",I31,K3=\"ASL\",H31,K3=\"JAP\",G31,K3=\"No\",\"\")' },\n    { range: \"F4\", formula: '=IFS(K3=\"SPA\",I31,K3=\"ASL\",H31,K3=\"JAP\",G31,K3=\"No\",\"\")' },\n    { range: \"F9\", formula: '=IFS(K3=\"SPA\",I31,K3=\"ASL\",H31,K3=\"JAP\",G31,K3=\"No\",\"\")' }\n  ];\n\n  // Apply all formulas in one loop\n  formulas.forEach(item => {\n    pm.getRange(item.range).setFormulaLocal(item.formula);\n  });\n\n  resetData(workbook);\n\n  pm.getRange(\"A8:A10\").getFormat().getFont().setSize(24);\n  pm.getRange(\"D8:D10\").getFormat().getFont().setSize(24);\n\n  pm.getRange(\"A8\").setValue(\"PATIENT\");\n  pm.getRange(\"A9\").setValue(\"SERVICE\");\n  pm.getRange(\"A10\").setValue(\"ATTENDING\");\n\n  // Resume protection\n  protection.resumeProtection();\n}\n\nfunction resetData (workbook: ExcelScript.Workbook){\n  let pm = workbook.getWorksheet(\"PATIENT_MAKER\");\n\n  let last = pm.getRange(\"I2\");\n  let first = pm.getRange(\"I3\");\n  let service = pm.getRange(\"I4\");\n  let attending = pm.getRange(\"I5\");\n  let team = pm.getRange(\"I6\");\n  let loc = pm.getRange(\"I8\");\n  let floor = pm.getRange(\"I9\");\n  let room = pm.getRange(\"I10\");\n  let nameAlert = pm.getRange(\"K2\");\n  let interpreter = pm.getRange(\"K3\");\n  let suppressed = pm.getRange(\"K4\");\n  let pav = pm.getRange(\"K8\");\n\n  let rangesToReset = [\n    \"I2\", \"I3\", \"I4\", \"I5\", \"I6\", \"I8\", \"I9\", \"I10\",\n    \"K2\", \"K3\", \"K4\", \"K8\"\n  ];\n\n  let ranges = [\"I2:I6\", \"I8:I10\", \"K2:K4\", \"K8:K8\"];\n\n \n\n  for (let rangeAddress of rangesToReset) {\n    let range = pm.getRange(rangeAddress);\n    const dataValidation = range.getDataValidation();\n    dataValidation.clear\n  }\n\n  pm.getRange(\"I2:I10\").getDataValidation()?.clear();\n\n  pm.getRange(\"K2:K4\").getDataValidation()?.clear();\n\n  pm.getRange(\"K8:K8\").getDataValidation()?.clear();\n\n  const serviceData = service.getDataValidation();\n\n  const serviceList: ExcelScript.ListDataValidation = {\n    source: \"SGE,SGT,SCR,SGO,SGR,TXP,PLA,OMF,VIR,HNS,HM,NEU,BMT,GEMS,GYO,GYN,URO\", inCellDropDown: true\n  }\n\n  const teamList: ExcelScript.ListDataValidation = {\n    source: \"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,FF,L,R,ICU\", inCellDropDown: true\n  }\n\n  const firstList: ExcelScript.ListDataValidation = {\n    source: \"a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z\", inCellDropDown: true\n  }\n\n  const locList: ExcelScript.ListDataValidation = {\n    source: \"FLOOR, ICU\", inCellDropDown: true\n  }\n\n  const floorList: ExcelScript.ListDataValidation = {\n    source: \"5,6,7,8,9,10,11,12\", inCellDropDown:true\n  }\n\n  const roomList: ExcelScript.ListDataValidation = {\n    source: \"111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242\", inCellDropDown: true\n  }\n\n  const pavList: ExcelScript.ListDataValidation = {\n    source: \"A,H,2CDU\", inCellDropDown: true\n  }\n\n  \n\n  const nameAlertList: ExcelScript.ListDataValidation = {\n    source: \"No,Yes\", inCellDropDown: true\n  }\n\n  const interpreterList: ExcelScript.ListDataValidation = {\n    source: \"SPA, ASL, JAP, No\", inCellDropDown: true\n  }\n\n  const suppressedList: ExcelScript.ListDataValidation = {\n    source: \"No,Yes\", inCellDropDown:true\n  }\n\n  const serviceRule: ExcelScript.DataValidationRule = {\n    list: serviceList\n  }\n\n  const firstRule: ExcelScript.DataValidationRule ={list: firstList}\n\n  const teamRule: ExcelScript.DataValidationRule = {\n    list: teamList\n  }\n\n  const locRule: ExcelScript.DataValidationRule = {\n    list: locList\n  }\n    \n  const roomRule: ExcelScript.DataValidationRule = {\n    list: roomList\n  }\n\n  const floorRule: ExcelScript.DataValidationRule = {\n    list: floorList\n  }\n\n  const pavRule: ExcelScript.DataValidationRule = {\n    list: pavList\n  }\n\n  const nameAlertRule: ExcelScript.DataValidationRule = {\n    list: nameAlertList\n  }\n\n  const interpreterRule: ExcelScript.DataValidationRule = {\n    list: interpreterList\n  }\n\n  const suppressedRule: ExcelScript.DataValidationRule = {\n    list: suppressedList\n  }\n\n  serviceData.setRule(serviceRule)\n\n  floor.getDataValidation().setRule(floorRule);\n\n  team.getDataValidation().setRule(teamRule);\n\n  room.getDataValidation().setRule(roomRule)\n\n  first.getDataValidation().setRule(firstRule);\n\n  loc.getDataValidation().setRule(locRule);\n\n  pav.getDataValidation().setRule(pavRule);\n\n  nameAlert.getDataValidation().setRule(nameAlertRule);\n\n  interpreter.getDataValidation().setRule(interpreterRule);\n\n  suppressed.getDataValidation().setRule(suppressedRule);\n\n  service.getDataValidation().setIgnoreBlanks(true);\n\n  first.getDataValidation().setIgnoreBlanks(true);\n\n  team.getDataValidation().setIgnoreBlanks(true);\n\n  floor.getDataValidation().setIgnoreBlanks(true);\n\n  room.getDataValidation().setIgnoreBlanks(true);\n\n  pav.getDataValidation().setIgnoreBlanks(true);\n\n  nameAlert.getDataValidation().setIgnoreBlanks(true);\n\n  interpreter.getDataValidation().setIgnoreBlanks(true);\n\n  suppressed.getDataValidation().setIgnoreBlanks(true);\n\n  floor.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\"});\n\n  first.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  service.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  team.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  loc.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  nameAlert.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  suppressed.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  pav.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  interpreter.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n  room.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: \"\", title: \"\" });\n\n service.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  room.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  first.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  team.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  loc.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  pav.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  nameAlert.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  interpreter.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  suppressed.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n  floor.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });\n\n\n\n  }\n\nfunction allowEdit(workbook: ExcelScript.Workbook) {\n  let pm = workbook.getWorksheet(\"PATIENT_MAKER\");\n\n  // Array of range addresses to be made editable\n  let ranges = [\"I2:I6\", \"I8:I10\", \"K2:K4\", \"K8:K8\"];\n\n  // Options for the allow edit ranges (no password)\n  const allowEditSettings: ExcelScript.AllowEditRangeOptions = {\n    password: null\n  };\n\n  // Get the worksheet protection object\n  const protection = pm.getProtection();\n\n  // Loop through the range addresses and add each as an allow-edit range\n  for (let rangeAddress of ranges) {\n    let range = pm.getRange(rangeAddress); // Get the actual Range object\n\n\n    const title = rangeAddress; // Unique title for each range\n\n    let editRange = protection.getAllowEditRanges();\n    \n      protection.addAllowEditRange(rangeAddress, rangeAddress, allowEditSettings);\n  }\n}\n\n\n\n\n\n\n\n\n\n  \n\n\n","description":"","noCodeMetadata":"","parameterInfo":"{\"version\":1,\"originalParameterOrder\":[],\"parameterSchema\":{\"type\":\"object\",\"default\":{},\"x-ms-visibility\":\"internal\"},\"returnSchema\":{\"type\":\"object\",\"properties\":{}},\"signature\":{\"comment\":\"\",\"parameters\":[{\"name\":\"workbook\",\"comment\":\"\"}]}}","apiInfo":"{\"variant\":\"synchronous\",\"variantVersion\":2}"}
+function main(workbook: ExcelScript.Workbook) {
+  let cs = workbook.getWorksheet("CENSUS TRACKING");
+  const protection = cs.getProtection();
+
+  // Pause protection if active
+  if (protection.getProtected()) {
+    protection.pauseProtection("imsorrydave");
+  }
+
+  // Apply date formulas for B2, B8, B14, ..., B38
+  for (let i = 0; i < 7; i++) {
+    let cell = cs.getRange(`B${2 + i * 6}`);
+    cell.setFormula(`=TEXT(L6+${i}, "mm/dd/yy")`);
+  }
+
+  // Other formulas and their target ranges
+  const formulas = [
+    { range: 'M14', formula: `=SUM(IF(FREQUENCY(IF('PHONE 6.100 AC-PC'!E7:E38<>"", MATCH('PHONE 6.100 AC-PC'!E7:E38, 'PHONE 6.100 AC-PC'!E7:E38, 0)), IF('PHONE 6.100 AC-PC'!E7:E38<>"", MATCH('PHONE 6.100 AC-PC'!E7:E38, 'PHONE 6.100 AC-PC'!E7:E38, 0))) > 0, 1)) + IF(COUNTIF('PHONE 6.100 AC-PC'!E7:E38, 'PHONE 6.100 AC-PC'!C4)=0, 1, 0) + SUM(IF('PHONE 6.100 AC-PC'!G7:G38 = "RESOURCE",1,0))` },
+    { range: 'M15', formula: `=SUM(IF(FREQUENCY(IF('PHONE 6.100 AC-PC'!G7:G38<>"", MATCH('PHONE 6.100 AC-PC'!G7:G38, 'PHONE 6.100 AC-PC'!G7:G38, 0)), IF('PHONE 6.100 AC-PC'!G7:G38<>"", MATCH('PHONE 6.100 AC-PC'!G7:G38, 'PHONE 6.100 AC-PC'!G7:G38, 0))) > 0, 1)) + SUM(IF('PHONE 6.100 AC-PC'!G7:G38 = "RESOURCE",-1,0))` },
+    { range: 'M18', formula: `=COUNTIFS('PHONE 6.100 AC-PC'!D7:D38,"AC",'PHONE 6.100 AC-PC'!B7:B38,"<>*(ADMIT)*")` },
+    { range: 'M19', formula: `=COUNTIFS('PHONE 6.100 AC-PC'!D7:D38,"PC",'PHONE 6.100 AC-PC'!B7:B38,"<>*(ADMIT)*")` },
+    { range: 'M20', formula: `='PHONE 6.100 AC-PC'!O13` },
+    { range: 'M23', formula: `=COUNTIFS('PHONE 6.100 AC-PC'!B7:B38,"*(+)*",'PHONE 6.100 AC-PC'!B7:B38,"<>*(ADMIT)*")` },
+    { range: 'M26', formula: `=SUM(COUNTIFS('PHONE 6.100 AC-PC'!B7:B38,{"*(SIT)*","*(TS)*","*(72)*"},'PHONE 6.100 AC-PC'!B7:B38,"<>*(ADMIT)*"))` },
+    { range: 'M29', formula: `=COUNTIF('PHONE 6.100 AC-PC'!B7:B38,"*(ADMIT)*")` },
+    { range: 'A1', formula: `="Census Tracking Week : " & TEXT(L6,"mm/dd") & " - " & TEXT(L6+6,"mm/dd")` }
+  ];
+
+  // Apply all formulas
+  formulas.forEach(({ range, formula }) => {
+    cs.getRange(range).setFormula(formula);
+  });
+
+  billThing(workbook);
+
+  clearAndSetAllowEdit(workbook, ["C3:H7", "C9:H13", "C15:H19", "C21:H25", "C27:H31", "C33:H37", "C39:H43", "L6"]);
+  
+  // Resume protection
+  protection.resumeProtection();
+
+  
+}
+
+
+
+function billThing(workbook: ExcelScript.Workbook) {
+  let cs = workbook.getWorksheet("CENSUS TRACKING");
+
+  const formulas = [{range: 'Q19', formula: '=S20'},{range: 'Q20', formula: '=M14& " / " &M15'},{range:'Q21',formula: '=S26& " / " & S23'},{range:'Q22',formula: '=S19& " / " & S18'},{range:'Q23',formula: '=S29& " / 0"'}];
+
+   const formulas2 = [{range: 'Q3', formula: '=S20'},{range: 'Q4', formula: '=S14& " / " &S15'},{range:'Q5',formula: '=S26& " / " & S23'},{range:'Q6',formula: '=S19& " / " & S18'},{range:'Q7',formula: '=S29& " / 0"'}];
+
+  const formulas3 = [{ range: 'S20', formula: '=SUM(M20,P20)' }, { range: 'S14', formula: '=SUM(M14,P14)' }, { range: 'S15', formula: '=SUM(M15,P15)' }, { range: 'S18', formula: '=SUM(M18,P18)' }, { range: 'S19', formula: '=SUM(M19,P19)' }, { range: 'S23', formula: '=SUM(M23,P23)' }, { range: 'S26', formula: '=SUM(M26,P26)' }, { range: 'S26', formula: '=SUM(M26,P26)' }, { range: 'S29', formula: '=SUM(M29,P19)' }];
+
+  // Apply all formulas
+  formulas.forEach(({ range, formula }) => {
+    cs.getRange(range).setFormula(formula);
+  });
+
+  //formulas2.forEach(({ range, formula }) => {
+  //  cs.getRange(range).setFormula//(formula);
+  //});
+
+  formulas3.forEach(({ range, formula }) => {
+    cs.getRange(range).setFormula(formula);
+  });
+
+  let values = cs.getRange("Q19:Q23");
+
+  cs.getRange("Q3:Q7").copyFrom(values, ExcelScript.RangeCopyType.values, false, false);
+}
+
+function clearAndSetAllowEdit(workbook: ExcelScript.Workbook, editableRanges: string[]) {
+  // Select the active sheet (you can change this to a specific sheet name if needed)
+  let sheet = workbook.getActiveWorksheet();
+
+  // Clear all existing allowEdit permissions by unprotecting the sheet
+  let protection = sheet.getProtection();
+  if (protection.getProtected()) {
+    protection.pauseProtection();
+  }
+
+  // Protect the sheet to apply new settings
+  protection.protect();
+
+  protection.setPassword("imsorrydave");
+
+  // Loop through the specified ranges and set them as editable
+  editableRanges.forEach(rangeAddress => {
+    let range = sheet.getRange(rangeAddress);
+    range.getFormat().getProtection().setLocked(false);
+  });
+
+  // Log completion
+  console.log("Protection settings updated. Specified ranges are now editable.");
+}
