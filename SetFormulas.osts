@@ -1,144 +1,144 @@
 function main(workbook: ExcelScript.Workbook) {
-  // Get sheets
-  let ps = workbook.getWorksheet("PHONE 6.100 AC-PC");
-  let protection = ps.getProtection();
+  const sheetNames = ["PHONE 6.100 AC-PC", "PHONE 6.200 AC-PC", "PHONE 7.200 ICU"];
 
-  // Pause protection to allow edits
-  protection.pauseProtection("imsorrydave");
+  for (const name of sheetNames) {
+    const ps = workbook.getWorksheet(name);
+    if (!ps) continue;
 
-  // Set formulas and autofill
-  applyFormulas(ps);
+    const config = getSheetConfig(name);
+    const protection = ps.getProtection();
 
-  // Apply formatting
-  applyBorders(ps, "A6:I38");
+    protection.pauseProtection("imsorrydave");
+    
+   
 
-  // Apply conditional formatting
-  condFormatting(ps);
 
-  dataValidation(workbook);
+    applyFormulas(ps, config.dataRowStart, config.dataRowEnd);
+    applyBorders(ps, `A6:I${config.dataRowEnd}`);
+    condFormatting(ps, config.dataRowStart, config.dataRowEnd);
+    dataValidation(ps, config.dataRowStart, config.dataRowEnd);
+    clearAndSetAllowEdit(ps, config.editableRanges);
 
-  clearAndSetAllowEdit(workbook, ["C4","C5","B7:B38","C7:C38","D7:D38","E7:E38","G7:G38","L3:L5"]);
-
-  ps.getRange("A7:I38").getFormat().getFont().setName("Times New Roman");
-  ps.getRange("A7:I38").getFormat().getFont().setBold(true);
-  ps.getRange("A7:I38").getFormat().getFont().setSize(14);
-  ps.getRange("A7:I38").getFormat().setShrinkToFit(true);
-  
-  nameAlerts(workbook.getActiveWorksheet());
-  // Resume protection after making changes
-  protection.resumeProtection();
-}
-
-// Helper function to apply formulas
-function applyFormulas(ps: ExcelScript.Worksheet) {
-  const rnFormula = '=SUM(IF(FREQUENCY(IF(E7:E38<>"", MATCH(E7:E38, E7:E38, 0)), IF(E7:E38<>"", MATCH(E7:E38, E7:E38, 0))) > 0, 1)) + IF(COUNTIF(E7:E38, C4)=0, 1, 0) + SUM(IF(G7:G38 = "RESOURCE",1,0))';
-  const nctFormula = '=SUM(IF(FREQUENCY(IF(G7:G38<>"", MATCH(G7:G38, G7:G38, 0)), IF(G7:G38<>"", MATCH(G7:G38, G7:G38, 0))) > 0, 1)) +SUM(IF(G7:G38 = "RESOURCE",-1,0))';
-  const acFormula = '=COUNTIFS(D7:D38,"*AC*",B7:B38,"<>*(ADMIT)*")';
-  const pcFormula = '=COUNTIFS(D7:D38,"*PC*",B7:B38,"<>*(ADMIT)*")';
-  const otherFormulas = {
-    chargeFormula: '=IF(C4<>"",XLOOKUP(C4,\'RN-NCT LIST\'!F:F,\'RN-NCT LIST\'!G:G), "")',
-    sgeFormula: '=COUNTIFS(C7:C38,"*SGE*",B7:B38,"<>*(ADMIT)*")',
-    sgtFormula: '=COUNTIFS(C7:C38,"*SGT*",B7:B38,"<>*(ADMIT)*")',
-    scrFormula: '=COUNTIFS(C7:C38,"*SCR*",B7:B38,"<>*(ADMIT)*")',
-    sgoFormula: '=COUNTIFS(C7:C38,"*SGO*",B7:B38,"<>*(ADMIT)*")',
-    covidFormula: '=COUNTIFS(B7:B38,"*(+)*",B7:B38,"<>*(ADMIT)*")',
-    sitterFormula: '=SUM(COUNTIFS(B7:B38,{"*(SIT)*","*(TS)*","*(72)*"},B7:B38,"<>*(ADMIT)*"))',
-    shiftFormula: '',
-  };
-
-  const fillRange = ps.getRange("F7:F38");
-  ps.getRange("F7").setFormula('=IF(E7<>"",XLOOKUP(E7,\'RN-NCT LIST\'!F:F,\'RN-NCT LIST\'!G:G),"")');
-  ps.getRange("F7").autoFill(fillRange, ExcelScript.AutoFillType.fillDefault);
-
-  const fillRange2 = ps.getRange("H7:H38");
-  ps.getRange("H7").setFormula('=IF(G7<>"",XLOOKUP(G7,\'RN-NCT LIST\'!F:F,\'RN-NCT LIST\'!G:G),"")');
-  ps.getRange("H7").autoFill(fillRange2, ExcelScript.AutoFillType.fillDefault);
-
-  // Apply more formulas
-  ps.getRange("O7").setFormula(rnFormula);
-  ps.getRange("O8").setFormula(nctFormula);
-  ps.getRange("O11").setFormula(acFormula);
-  ps.getRange("O12").setFormula(pcFormula);
-  //ps.getRange("O13").setFormulaLocal('=SUM(O11,O12)');
-  ps.getRange("O13").setFormula('=COUNTIFS(B7:B38, "<>*ADMIT*", B7:B38, "<>")');
-  ps.getRange("F4").setFormulaLocal(otherFormulas.chargeFormula);
-  ps.getRange("O16").setFormulaLocal(otherFormulas.sgeFormula);
-  ps.getRange("O21").setFormula('=COUNTIFS(B7:B38, "<>*ADMIT*", B7:B38, "<>")');
-  ps.getRange("O17").setFormulaLocal(otherFormulas.sgtFormula);
-  ps.getRange("O18").setFormulaLocal(otherFormulas.scrFormula);
-  ps.getRange("O19").setFormulaLocal(otherFormulas.sgoFormula);
-  ps.getRange("O24").setFormulaLocal(otherFormulas.covidFormula);
-  ps.getRange("O27").setFormulaLocal(otherFormulas.sitterFormula);
-}
-
-function applyBorders(sheet: ExcelScript.Worksheet, rangeAddress: string) {
-  // Apply border to the top edge
-  let topBorder = sheet.getRange(rangeAddress).getFormat().getRangeBorder(ExcelScript.BorderIndex.edgeTop);
-  topBorder.setStyle(ExcelScript.BorderLineStyle.continuous);
-  topBorder.setWeight(ExcelScript.BorderWeight.thick);
-  topBorder.setColor("000000");
-
-  // Apply border to the right edge
-  let rightBorder = sheet.getRange(rangeAddress).getFormat().getRangeBorder(ExcelScript.BorderIndex.edgeRight);
-  rightBorder.setStyle(ExcelScript.BorderLineStyle.continuous);
-  rightBorder.setWeight(ExcelScript.BorderWeight.thick);
-  rightBorder.setColor("000000");
-
-  // Apply border to the left edge
-  let leftBorder = sheet.getRange(rangeAddress).getFormat().getRangeBorder(ExcelScript.BorderIndex.edgeLeft);
-  leftBorder.setStyle(ExcelScript.BorderLineStyle.continuous);
-  leftBorder.setWeight(ExcelScript.BorderWeight.thick);
-  leftBorder.setColor("000000");
-
-  // Apply border to the bottom edge
-  let bottomBorder = sheet.getRange(rangeAddress).getFormat().getRangeBorder(ExcelScript.BorderIndex.edgeBottom);
-  bottomBorder.setStyle(ExcelScript.BorderLineStyle.continuous);
-  bottomBorder.setWeight(ExcelScript.BorderWeight.thick);
-  bottomBorder.setColor("000000");
-
-  // Apply border to the inside horizontal
-  let insideHBorder = sheet.getRange(rangeAddress).getFormat().getRangeBorder(ExcelScript.BorderIndex.insideHorizontal);
-  insideHBorder.setStyle(ExcelScript.BorderLineStyle.continuous);
-  insideHBorder.setWeight(ExcelScript.BorderWeight.thin);
-  insideHBorder.setColor("000000");
-
-  // Apply border to the inside vertical
-  let insideVBorder = sheet.getRange(rangeAddress).getFormat().getRangeBorder(ExcelScript.BorderIndex.insideVertical);
-  insideVBorder.setStyle(ExcelScript.BorderLineStyle.continuous);
-  insideVBorder.setWeight(ExcelScript.BorderWeight.thin);
-  insideVBorder.setColor("000000");
-}
-
-function condFormatting(sheet: ExcelScript.Worksheet) {
-  let patientName = sheet.getRange('B7:B38');
-
-  try {
-    // Check if there are conditional formats and safely delete them
-    let conditionalFormats = patientName.getConditionalFormats();
-    if (conditionalFormats.length > 0) {
-      for (let i = conditionalFormats.length - 1; i >= 0; i--) {
-        conditionalFormats[i].delete(); // Safely delete existing formats
-      }
-      console.log("Conditional formatting rules cleared.");
+    // Apply formatting safely
+    try {
+      const fontRange = ps.getRange(`A${config.dataRowStart}:I${config.dataRowEnd}`);
+      const font = fontRange.getFormat().getFont();
+      font.setName("Times New Roman");
+      font.setBold(true);
+      font.setSize(14);
+      fontRange.getFormat().setShrinkToFit(true);
+    } catch (err) {
+      console.log("Error setting font: " + err.message);
     }
-  } catch (error) {
-    console.log("Error occurred while clearing conditional formatting: " + error.message);
+
+    nameAlerts(ps, config.dataRowStart, config.dataRowEnd);
+
+    // Reapply protection with password
+    protection.resumeProtection(); // ✅ no password possible in Office Scripts
+
+
+  }
+}
+
+
+  function applyFormulas(ps: ExcelScript.Worksheet, startRow: number, endRow: number) {
+    const rnFormula = '=SUM(IF(FREQUENCY(IF(E7:E38<>"", MATCH(E7:E38, E7:E38, 0)), IF(E7:E38<>"", MATCH(E7:E38, E7:E38, 0))) > 0, 1)) + IF(COUNTIF(E7:E38, C4)=0, 1, 0) + SUM(IF(G7:G38 = "RESOURCE",1,0))';
+    const nctFormula = '=SUM(IF(FREQUENCY(IF(G7:G38<>"", MATCH(G7:G38, G7:G38, 0)), IF(G7:G38<>"", MATCH(G7:G38, G7:G38, 0))) > 0, 1)) +SUM(IF(G7:G38 = "RESOURCE",-1,0))';
+    const acFormula = '=COUNTIFS(D7:D38,"*AC*",B7:B38,"<>*(ADMIT)*")';
+    const pcFormula = '=COUNTIFS(D7:D38,"*PC*",B7:B38,"<>*(ADMIT)*")';
+
+    const otherFormulas = {
+      chargeFormula: '=IF(C4<>"",XLOOKUP(C4,\'RN-NCT LIST\'!F:F,\'RN-NCT LIST\'!G:G), "")',
+      sgeFormula: '=COUNTIFS(C7:C38,"*SGE*",B7:B38,"<>*(ADMIT)*")',
+      sgtFormula: '=COUNTIFS(C7:C38,"*SGT*",B7:B38,"<>*(ADMIT)*")',
+      scrFormula: '=COUNTIFS(C7:C38,"*SCR*",B7:B38,"<>*(ADMIT)*")',
+      sgoFormula: '=COUNTIFS(C7:C38,"*SGO*",B7:B38,"<>*(ADMIT)*")',
+      covidFormula: '=COUNTIFS(B7:B38,"*(+)*",B7:B38,"<>*(ADMIT)*")',
+      sitterFormula: '=SUM(COUNTIFS(B7:B38,{"*(SIT)*","*(TS)*","*(72)*"},B7:B38,"<>*(ADMIT)*"))'
+    };
+
+    // --- Autofill F column ---
+    const fStartCell = `F${startRow}`;
+    const fStart = ps.getRange(fStartCell);
+    fStart.setFormula(`=IF(E${startRow}<>"",XLOOKUP(E${startRow},'RN-NCT LIST'!F:F,'RN-NCT LIST'!G:G),"")`);
+    if (endRow > startRow) {
+      const fFillRange = ps.getRange(`F${startRow}:${'F'}${endRow}`);
+      fStart.autoFill(fFillRange, ExcelScript.AutoFillType.fillDefault);
+    }
+
+    // --- Autofill H column ---
+    const hStartCell = `H${startRow}`;
+    const hStart = ps.getRange(hStartCell);
+    hStart.setFormula(`=IF(G${startRow}<>"",XLOOKUP(G${startRow},'RN-NCT LIST'!F:F,'RN-NCT LIST'!G:G),"")`);
+    if (endRow > startRow) {
+      const hFillRange = ps.getRange(`H${startRow}:${'H'}${endRow}`);
+      hStart.autoFill(hFillRange, ExcelScript.AutoFillType.fillDefault);
+    }
+
+    // --- Summary formulas (optional: make these dynamic later) ---
+    ps.getRange("O7").setFormula(rnFormula);
+    ps.getRange("O8").setFormula(nctFormula);
+    ps.getRange("O11").setFormula(acFormula);
+    ps.getRange("O12").setFormula(pcFormula);
+    ps.getRange("O13").setFormula('=COUNTIFS(B7:B38, "<>*ADMIT*", B7:B38, "<>")');
+    ps.getRange("F4").setFormulaLocal(otherFormulas.chargeFormula);
+    ps.getRange("O16").setFormulaLocal(otherFormulas.sgeFormula);
+    ps.getRange("O17").setFormulaLocal(otherFormulas.sgtFormula);
+    ps.getRange("O18").setFormulaLocal(otherFormulas.scrFormula);
+    ps.getRange("O19").setFormulaLocal(otherFormulas.sgoFormula);
+    ps.getRange("O21").setFormula('=COUNTIFS(B7:B38, "<>*ADMIT*", B7:B38, "<>")');
+    ps.getRange("O24").setFormulaLocal(otherFormulas.covidFormula);
+    ps.getRange("O27").setFormulaLocal(otherFormulas.sitterFormula);
   }
 
-  // Apply conditional formatting for text comparisons "(S)" and "(P)"
-  applyConditionalFormatting(patientName, '(S)', 'red', '00b0f0');
-  applyConditionalFormatting(patientName, '(P)', 'red', '00b0f0');
 
-  // Apply custom conditional formatting with the formula
-  let conditionalFormatRule = patientName.addConditionalFormat(ExcelScript.ConditionalFormatType.custom);
 
-  // Adjust the formula to reference the correct relative cells within the range
-  conditionalFormatRule.getCustom().getRule().setFormula("=AND(M7>1, M38<5)");
 
-  let format = conditionalFormatRule.getCustom().getFormat();
-  format.getFill().setColor("33ccff"); // Set background color to blue
-  format.getFont().setBold(true); // Make font bold
-}
+  function applyBorders(sheet: ExcelScript.Worksheet, rangeAddress: string) {
+    let borders = [
+      ExcelScript.BorderIndex.edgeTop,
+      ExcelScript.BorderIndex.edgeRight,
+      ExcelScript.BorderIndex.edgeLeft,
+      ExcelScript.BorderIndex.edgeBottom,
+      ExcelScript.BorderIndex.insideHorizontal,
+      ExcelScript.BorderIndex.insideVertical
+    ];
+
+    let weights = [ExcelScript.BorderWeight.thick, ExcelScript.BorderWeight.thick, ExcelScript.BorderWeight.thick,
+    ExcelScript.BorderWeight.thick, ExcelScript.BorderWeight.thin, ExcelScript.BorderWeight.thin];
+
+    borders.forEach((edge, index) => {
+      const border = sheet.getRange(rangeAddress).getFormat().getRangeBorder(edge);
+      border.setStyle(ExcelScript.BorderLineStyle.continuous);
+      border.setWeight(weights[index]);
+      border.setColor("000000");
+    });
+  }
+
+
+  function condFormatting(sheet: ExcelScript.Worksheet, startRow: number, endRow: number) {
+    const patientName = sheet.getRange(`B${startRow}:B${endRow}`);
+
+    try {
+      const formats = patientName.getConditionalFormats();
+      for (let i = formats.length - 1; i >= 0; i--) {
+        formats[i].delete();
+      }
+    } catch (error) {
+      console.log("Error clearing formats: " + error.message);
+    }
+
+    applyConditionalFormatting(patientName, '(S)', 'red', '00b0f0');
+    applyConditionalFormatting(patientName, '(P)', 'red', '00b0f0');
+
+    const formulaRule = patientName.addConditionalFormat(ExcelScript.ConditionalFormatType.custom);
+    formulaRule.getCustom().getRule().setFormula(`=AND(M${startRow}>1, M${endRow}<5)`);
+
+    let format = formulaRule.getCustom().getFormat();
+    format.getFill().setColor("33ccff");
+    format.getFont().setBold(true);
+  }
+
 
 // Helper function for conditional formatting
 function applyConditionalFormatting(range: ExcelScript.Range, text: string, color1: string, color2: string) {
@@ -149,138 +149,99 @@ function applyConditionalFormatting(range: ExcelScript.Range, text: string, colo
 }
 
 
-function dataValidation(workbook: ExcelScript.Workbook) {
-  const ps = workbook.getWorksheet("PHONE 6.100 AC-PC");
+  function dataValidation(sheet: ExcelScript.Worksheet, startRow: number, endRow: number) {
+    const rnRange = sheet.getRange(`E${startRow}:E${endRow}`);
+    const nctRange = sheet.getRange(`G${startRow}:G${endRow}`);
+    const locRange = sheet.getRange(`D${startRow}:D${endRow}`);
+    const teamRange = sheet.getRange(`C${startRow}:C${endRow}`);
+    const shiftRange = sheet.getRange("C5");
 
-  // Define the ranges
-  const rnRange = ps.getRange("E7:E38");
-  const nctRange = ps.getRange("G7:G38");
-  const locRange = ps.getRange("D7:D38");
-  const teamRange = ps.getRange("C7:C38");
-  const shiftRange = ps.getRange("C5:C5");
+    [rnRange, nctRange, locRange, teamRange, shiftRange].forEach(r => r.getDataValidation()?.clear());
 
+    const listRule = (src: string): ExcelScript.DataValidationRule => ({ list: { source: src, inCellDropDown: true } });
+    const errorAlert = (msg: string): ExcelScript.DataValidationErrorAlert => ({
+      message: msg, showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, title: msg
+    });
 
-  // Clear existing validations
-  [rnRange, nctRange, locRange, teamRange, shiftRange].forEach(range => {
-    range.getDataValidation()?.clear();
-  });
-
-  // Define validation rules
-  const rnRule: ExcelScript.DataValidationRule = {
-    list: { source: "='RN-NCT LIST'!$F:$F", inCellDropDown: true }
-  };
-
-  const shiftRule: ExcelScript.DataValidationRule = {
-    list: { source: "7 AM,7 PM", inCellDropDown: true }
-  };
-
-  const nctRule: ExcelScript.DataValidationRule = {
-    list: { source: "='RN-NCT LIST'!$F:$F", inCellDropDown: true }
-  };
-
-  const locRule: ExcelScript.DataValidationRule = {
-    list: { source: "AC,PC", inCellDropDown: true }
-  };
-
-  const teamRule: ExcelScript.DataValidationRule = {
-    list: { source: "=$B$78:$B$128", inCellDropDown: true }
-  };
-
-  const teamError: ExcelScript.DataValidationErrorAlert = {
-    message:"wrong team", showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, title: "wrong team"
-  };
-  const rnError: ExcelScript.DataValidationErrorAlert = {
-    message: "rn not found", showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, title: "rn not found"
-  };
-  const nctError: ExcelScript.DataValidationErrorAlert = {
-    message: "nct not found", showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, title: "nct not found"
-  };
-  const shiftError: ExcelScript.DataValidationErrorAlert = {
-    message: "not valid shift", showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, title: "not valid shift"
-  };
-  const locError: ExcelScript.DataValidationErrorAlert = {
-    message: "loc doesn't exist", showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, title: "loc doesn't exist"
-  };
-
-  // Apply rules
-  try {
-    rnRange.getDataValidation()?.setRule(rnRule);
+    rnRange.getDataValidation()?.setRule(listRule("='RN-NCT LIST'!$F:$F"));
     rnRange.getDataValidation()?.setIgnoreBlanks(true);
-    rnRange.getDataValidation()?.setErrorAlert(rnError);
-    nctRange.getDataValidation()?.setRule(nctRule);
-    nctRange.getDataValidation()?.setErrorAlert(nctError);
-    nctRange.getDataValidation()?.setIgnoreBlanks(true);
-    locRange.getDataValidation()?.setRule(locRule);
-    locRange.getDataValidation()?.setErrorAlert(locError);
-    locRange.getDataValidation()?.setIgnoreBlanks(true);
-    teamRange.getDataValidation()?.setRule(teamRule);
-    shiftRange.getDataValidation()?.setRule(shiftRule);
-    teamRange.getDataValidation()?.setErrorAlert(teamError);
-    teamRange.getDataValidation()?.setIgnoreBlanks(true);
-  } catch (error) {
-    
-  }
-}
+    rnRange.getDataValidation()?.setErrorAlert(errorAlert("rn not found"));
 
-  
-  
+    nctRange.getDataValidation()?.setRule(listRule("='RN-NCT LIST'!$F:$F"));
+    nctRange.getDataValidation()?.setIgnoreBlanks(true);
+    nctRange.getDataValidation()?.setErrorAlert(errorAlert("nct not found"));
+
+    locRange.getDataValidation()?.setRule(listRule("AC,PC"));
+    locRange.getDataValidation()?.setIgnoreBlanks(true);
+    locRange.getDataValidation()?.setErrorAlert(errorAlert("loc doesn't exist"));
+
+    teamRange.getDataValidation()?.setRule(listRule("=$B$78:$B$128"));
+    teamRange.getDataValidation()?.setIgnoreBlanks(true);
+    teamRange.getDataValidation()?.setErrorAlert(errorAlert("wrong team"));
+
+    shiftRange.getDataValidation()?.setRule(listRule("7 AM,7 PM"));
+    shiftRange.getDataValidation()?.setErrorAlert(errorAlert("not valid shift"));
+  }
+
+
+
 
 
 
 function allowToEditRange(sheet: ExcelScript.Worksheet) {
   // Get the worksheet where you want to apply protection
-  
+
 
   // Define the range that you want to allow edits in (Range object)
- 
+
   // Get the protection object for the worksheet
   const protection = sheet.getProtection();
 
   // If the sheet is not already protected, apply protection
-  
 
-    let allowEditRanges = protection.getAllowEditRanges();
-    for (let allowEditRange of allowEditRanges) {
-      allowEditRange.delete(); // Remove the allow-edit rule
-    
-  
 
-  // Define the options for the allowed edit range (e.g., no password required)
-  const allowEditSettings: ExcelScript.AllowEditRangeOptions = {
-    password: "imsorrydave"// No password protection for the range
+  let allowEditRanges = protection.getAllowEditRanges();
+  for (let allowEditRange of allowEditRanges) {
+    allowEditRange.delete(); // Remove the allow-edit rule
+
+
+
+    // Define the options for the allowed edit range (e.g., no password required)
+    const allowEditSettings: ExcelScript.AllowEditRangeOptions = {
+      password: "imsorrydave"// No password protection for the range
+    };
+
+    // Apply the "Allow to Edit" for the specified range
+    protection.addAllowEditRange("RN", "E7:E38", allowEditSettings); // Use the Range object
+
+    protection.addAllowEditRange("PATIENT", "B7:B38", allowEditSettings); // Use the Range object
+
+    protection.addAllowEditRange("TEAM", "C7:C38", allowEditSettings); // Use the Range object
+
+    protection.addAllowEditRange("LOC", "D7:D38", allowEditSettings); // Use the Range object
+
+    protection.addAllowEditRange("NCT", "G7:G38", allowEditSettings);
+
+    protection.addAllowEditRange("CHARGE", "C4:C4", allowEditSettings);
+
+    //protection.addAllowEditRange'("SHIFT", "C5:C5", allowEditSettings);
+
+    protection.addAllowEditRange("FIRST", "L3:L3", allowEditSettings);
+
+    protection.addAllowEditRange("LAST", "L4:L4", allowEditSettings);
+
+    protection.addAllowEditRange("NUM", "L5:L5", allowEditSettings);
   };
-
-  // Apply the "Allow to Edit" for the specified range
-  protection.addAllowEditRange("RN", "E7:E38", allowEditSettings); // Use the Range object
-
-  protection.addAllowEditRange("PATIENT", "B7:B38", allowEditSettings); // Use the Range object
-
-  protection.addAllowEditRange("TEAM", "C7:C38", allowEditSettings); // Use the Range object
-
-  protection.addAllowEditRange("LOC", "D7:D38", allowEditSettings); // Use the Range object
-
-  protection.addAllowEditRange("NCT", "G7:G38", allowEditSettings);
-
-  protection.addAllowEditRange("CHARGE", "C4:C4", allowEditSettings);
-
-  //protection.addAllowEditRange'("SHIFT", "C5:C5", allowEditSettings);
-
-  protection.addAllowEditRange("FIRST", "L3:L3", allowEditSettings);
-
-  protection.addAllowEditRange("LAST", "L4:L4", allowEditSettings);
-
-  protection.addAllowEditRange("NUM", "L5:L5", allowEditSettings);
-};
 
 };
 
 function allowEdit(sheet: ExcelScript.Worksheet) {
 
-  
 
-   if (sheet.getProtection().getProtected()) {
-        sheet.getProtection().unprotect("imsorrydave");
-    }
+
+  if (sheet.getProtection().getProtected()) {
+    sheet.getProtection().unprotect("imsorrydave");
+  }
 
   const editableRange1 = sheet.getRange("E7:E3");
   const editableRange2 = sheet.getRange("G7:G3");
@@ -302,7 +263,7 @@ function allowEdit(sheet: ExcelScript.Worksheet) {
   editableRange7.getFormat().getProtection().setLocked(false);
   editableRange8.getFormat().getProtection().setLocked(false);
   editableRange10.getFormat().getProtection().setLocked(false);
-  
+
 
   sheet.getProtection().protect()
 
@@ -319,96 +280,110 @@ function allowEdit(sheet: ExcelScript.Worksheet) {
  * @param workbook The workbook object in the Excel script.
  * @param editableRanges An array of string ranges that should be editable, e.g., ["A1:C10", "D1:D10"]
  */
-function clearAndSetAllowEdit(workbook: ExcelScript.Workbook, editableRanges: string[]) {
-  // Select the active sheet (you can change this to a specific sheet name if needed)
-  let sheet = workbook.getActiveWorksheet();
+  function clearAndSetAllowEdit(sheet: ExcelScript.Worksheet, editableRanges: string[]) {
+    const protection = sheet.getProtection();
 
-  // Clear all existing allowEdit permissions by unprotecting the sheet
-  let protection = sheet.getProtection();
-  if (protection.getProtected()) {
-    protection.pauseProtection();
-  }
+    // Fully unprotect the sheet
+    
 
-  // Protect the sheet to apply new settings
-  protection.protect();
+   
 
-  protection.setPassword("imsorrydave");
-
-  // Loop through the specified ranges and set them as editable
-  editableRanges.forEach(rangeAddress => {
-    let range = sheet.getRange(rangeAddress);
-    range.getFormat().getProtection().setLocked(false);
-  });
-
-  // Log completion
-  console.log("Protection settings updated. Specified ranges are now editable.");
-}
-
-function nameAlerts(sheet: ExcelScript.Worksheet) {
-  
-  
-   let range: ExcelScript.Range = sheet.getRange("B7:B38");
-  let data: (string | number | boolean)[][] = range.getValues();
-  let numRows: number = data.length;
-
-  let columnMValues: (number | string)[][] = [];
-  let wordCounts: { [key: string]: number } = {};
-  const excludedTexts: string[] = ["(S)", "(P)", "(SIT)", "(ADMIT)"];
-  const redFillTexts: string[] = ["(S)", "(P)"];
-  const blueFillTexts: string[] = ["(SIT)", "(ADMIT)"];
-  const redRGB: string = "#FF0000";
-  const blueRGB: string = "#0000FF";
-
-  function cleanName(name: string): string {
-    name = name.split(",")[0]; // Remove everything after a comma
-    excludedTexts.forEach((text) => {
-      name = name.replace(text, "");
-    });
-    return name.trim().toLowerCase().replace(/[^a-z]/g, ""); // Remove non-letter characters
-  }
-
-  function normalizeName(name: string): string {
-    return name.replace(/(.)\1+/g, "$1"); // Remove duplicate consecutive letters
-  }
-
-  let cleanedNames: string[] = data.map(row => row[0] ? cleanName(row[0] as string) : "");
-  let normalizedNames: string[] = cleanedNames.map(name => normalizeName(name));
-  let nameCounts: { [key: string]: number } = {};
-
-  normalizedNames.forEach(name => {
-    if (name) {
-      nameCounts[name] = (nameCounts[name] || 0) + 1;
-    }
-  });
-
-  for (let i = 0; i < numRows; i++) {
-    let fullName: string = data[i][0] as string;
-    let cell: ExcelScript.Range = sheet.getRange(`B${i + 7}`);
-    let fillColor: string = cell.getFormat().getFill().getColor();
-
-    if (!fullName) {
-      columnMValues.push([0]);
-    } else {
-      let cleanedFullName: string = cleanName(fullName);
-      let normalizedFullName: string = normalizeName(cleanedFullName);
-      let words = cleanedFullName.split(" ");
-      let hasDuplicateWords = new Set(words).size !== words.length;
-      let hasMultipleOccurrences: boolean = nameCounts[normalizedFullName] > 1;
-      
-      columnMValues.push([hasMultipleOccurrences && !hasDuplicateWords ? 2 : 1]);
-
-      if (fillColor === redRGB && !redFillTexts.some(text => fullName.includes(text))) {
-        cell.getFormat().getFill().setColor("#FFFFFF");
-      }
-      if (fillColor === blueRGB && !blueFillTexts.some(text => fullName.includes(text))) {
-        cell.getFormat().getFill().setColor("#FFFFFF");
+    // Add new editable ranges
+    for (let i = 0; i < editableRanges.length; i++) {
+      try {
+        protection.addAllowEditRange(`EditRange${i + 1}`, editableRanges[i], { password: "imsorrydave" });
+      } catch (err) {
+        console.log(`Error adding allow edit range '${editableRanges[i]}': ${err.message}`);
       }
     }
   }
 
-  sheet.getRangeByIndexes(6, 12, numRows, 1).setValues(columnMValues);
 
-  
+
+
+
+
+  function nameAlerts(sheet: ExcelScript.Worksheet, startRow: number, endRow: number) {
+    const range = sheet.getRange(`B${startRow}:B${endRow}`);
+    const data = range.getValues();
+    const numRows = data.length;
+    const columnMValues: (number | string)[][] = [];
+
+    const excluded = ["(S)", "(P)", "(SIT)", "(ADMIT)"];
+    const redFill = ["(S)", "(P)"];
+    const blueFill = ["(SIT)", "(ADMIT)"];
+    const redRGB = "#FF0000", blueRGB = "#0000FF";
+
+    function clean(name: string): string {
+      name = name.split(",")[0];
+      excluded.forEach(text => {
+        name = name.replace(text, "");
+      });
+      return name.trim().toLowerCase().replace(/[^a-z]/g, "");
+    }
+
+    function normalize(name: string): string {
+      return name.replace(/(.)\1+/g, "$1");
+    }
+
+    const names = data.map(row => row[0] ? clean(row[0] as string) : "");
+    const normNames = names.map(name => normalize(name));
+
+    const counts: { [key: string]: number } = {};
+    normNames.forEach(name => { if (name) counts[name] = (counts[name] || 0) + 1; });
+
+    for (let i = 0; i < numRows; i++) {
+      const fullName = data[i][0] as string;
+      const cell = sheet.getRange(`B${startRow + i}`);
+      const fill = cell.getFormat().getFill().getColor();
+
+      if (!fullName) {
+        columnMValues.push([0]);
+        continue;
+      }
+
+      const cleaned = clean(fullName);
+      const normalized = normalize(cleaned);
+      const words = cleaned.split(" ");
+      const hasDupWords = new Set(words).size !== words.length;
+      const isMultiple = counts[normalized] > 1;
+
+      columnMValues.push([isMultiple && !hasDupWords ? 2 : 1]);
+
+      if (fill === redRGB && !redFill.some(t => fullName.includes(t))) cell.getFormat().getFill().setColor("#FFFFFF");
+      if (fill === blueRGB && !blueFill.some(t => fullName.includes(t))) cell.getFormat().getFill().setColor("#FFFFFF");
+    }
+
+    sheet.getRangeByIndexes(startRow - 1, 12, numRows, 1).setValues(columnMValues);
+  }
+
+
+
+
+function getSheetConfig(sheetName: string): { range: string, editableRanges: string[], dataRowStart: number, dataRowEnd: number } {
+  if (sheetName === "PHONE 6.100 AC-PC") {
+    return {
+      range: "A7:I38",
+      editableRanges: ["C4", "C5", "B7:B38", "C7:C38", "D7:D38", "E7:E38", "G7:G38", "L3:L5"],
+      dataRowStart: 7,
+      dataRowEnd: 38
+    };
+  } else if (sheetName === "PHONE 6.200 AC-PC") {
+    return {
+      range: "A7:I26",
+      editableRanges: ["C4", "C5", "B7:B26", "C7:C26", "D7:D26", "E7:E26", "G7:G26", "L3:L5"],
+      dataRowStart: 7,
+      dataRowEnd: 26
+    };
+  } else if (sheetName === "PHONE 7.200 ICU") {
+    return {
+      range: "A7:I18",
+      editableRanges: ["C4", "C5", "B7:B18", "C7:C18", "E7:E18", "G7:G18", "L3:L5"],
+      dataRowStart: 7,
+      dataRowEnd: 18
+    };
+  } else {
+    throw new Error(`Unsupported sheet: ${sheetName}`);
+  }
 }
-
 
