@@ -1,1 +1,44 @@
-{"version":"0.3.0","body":"function main(workbook: ExcelScript.Workbook) {\n  let sheet = workbook.getActiveWorksheet();\n  const protection = sheet.getProtection();\n\n  // Temporarily pause protection with the password\n  protection.pauseProtection(\"imsorrydave\");\n\n  // Define the necessary sheets and ranges\n  let listSheet = workbook.getWorksheet(\"RN-NCT LIST\");\n  let psSheet = workbook.getWorksheet(\"PHONE 6.100 AC-PC\");\n  let numbersRange = listSheet.getRange(\"A1:D900\");\n  let values = numbersRange.getValues();\n\n  // Find the last used row in the range\n  let lastUsedRow = findLastUsedRow(values);\n\n  // Get values from PHONE 6.100 AC-PC sheet (L3, L4, L5)\n  const first = psSheet.getRange(\"L3\").getValue().toString().toUpperCase().trim();\n  const last = psSheet.getRange(\"L4\").getValue().toString().toUpperCase().trim();\n  const num = psSheet.getRange(\"L5\").getValue().toString().toUpperCase().trim();\n\n  // Insert values into RN-NCT LIST sheet at the next available row\n  // Note: Using getRangeByIndexes() to set a range with multiple columns\n  listSheet.getRangeByIndexes(lastUsedRow, 0, 1, 4).setValues([[first, last, null, num]]);\n\n  // Remove duplicates from columns A, B, and D\n  numbersRange.removeDuplicates([0, 1, 3], false);\n\n  // Clear contents of L3, L4, and L5 in PHONE 6.100 AC-PC sheet\n  psSheet.getRange(\"L3:L5\").clear(ExcelScript.ClearApplyTo.contents);\n\n  // Resume protection\n  protection.resumeProtection();\n}\n\n// Helper function to find the last used row in the range\nfunction findLastUsedRow(values: (string | number | boolean)[][]): number {\n  for (let row = values.length - 1; row >= 0; row--) {\n    if (!values[row].every(cell => cell === null || cell === '')) {\n      return row + 1; // Return the last used row (1-based index)\n    }\n  }\n  return 0; // Return 0 if no rows are used\n}\n","description":"","noCodeMetadata":"","parameterInfo":"{\"version\":1,\"originalParameterOrder\":[],\"parameterSchema\":{\"type\":\"object\",\"default\":{},\"x-ms-visibility\":\"internal\"},\"returnSchema\":{\"type\":\"object\",\"properties\":{}},\"signature\":{\"comment\":\"\",\"parameters\":[{\"name\":\"workbook\",\"comment\":\"\"}]}}","apiInfo":"{\"variant\":\"synchronous\",\"variantVersion\":2}"}
+function main(workbook: ExcelScript.Workbook) {
+  let sheet = workbook.getActiveWorksheet();
+  const protection = sheet.getProtection();
+
+  // Temporarily pause protection with the password
+  protection.pauseProtection("imsorrydave");
+
+  // Define the necessary sheets and ranges
+  let listSheet = workbook.getWorksheet("RN-NCT LIST");
+  let psSheet = workbook.getWorksheet("PHONE 6.100 AC-PC") || workbook.getWorksheet("PHONE 6.200 AC-PC") || workbook.getWorksheet("PHONE 6.200 ICU") || workbook.getWorksheet("PHONE 7.200 ICU") || workbook.getWorksheet("PHONE 7.100 AC-PC");
+  let numbersRange = listSheet.getRange("A1:D900");
+  let values = numbersRange.getValues();
+
+  // Find the last used row in the range
+  let lastUsedRow = findLastUsedRow(values);
+
+  // Get values from PHONE 6.100 AC-PC sheet (L3, L4, L5)
+  const first = psSheet.getRange("L3").getValue().toString().toUpperCase().trim();
+  const last = psSheet.getRange("L4").getValue().toString().toUpperCase().trim();
+  const num = psSheet.getRange("L5").getValue().toString().toUpperCase().trim();
+
+  // Insert values into RN-NCT LIST sheet at the next available row
+  // Note: Using getRangeByIndexes() to set a range with multiple columns
+  listSheet.getRangeByIndexes(lastUsedRow, 0, 1, 4).setValues([[first, last, null, num]]);
+
+  // Remove duplicates from columns A, B, and D
+  numbersRange.removeDuplicates([0, 1, 3], false);
+
+  // Clear contents of L3, L4, and L5 in PHONE 6.100 AC-PC sheet
+  psSheet.getRange("L3:L5").clear(ExcelScript.ClearApplyTo.contents);
+
+  // Resume protection
+  protection.resumeProtection();
+}
+
+// Helper function to find the last used row in the range
+function findLastUsedRow(values: (string | number | boolean)[][]): number {
+  for (let row = values.length - 1; row >= 0; row--) {
+    if (!values[row].every(cell => cell === null || cell === '')) {
+      return row + 1; // Return the last used row (1-based index)
+    }
+  }
+  return 0; // Return 0 if no rows are used
+}
