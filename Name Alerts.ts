@@ -14,10 +14,16 @@ function main(workbook: ExcelScript.Workbook) {
 
       nameAlerts(sheet, config.dataRowStart, config.dataRowEnd);
 
+      protection.resumeProtection();
+
   }
 }
 
 function nameAlerts(sheet: ExcelScript.Worksheet, startRow: number, endRow: number) {
+
+    if(sheet.getName() === "PHONE 7.200 ICU"){
+        const range = sheet.getRange(`D${startRow}:D${endRow}`);
+    }
     const range = sheet.getRange(`B${startRow}:B${endRow}`);
     const data = range.getValues();
     const numRows = data.length;
@@ -48,6 +54,9 @@ function nameAlerts(sheet: ExcelScript.Worksheet, startRow: number, endRow: numb
 
     for (let i = 0; i < numRows; i++) {
         const fullName = data[i][0] as string;
+        if(sheet.getName() === "PHONE 7.200 ICU"){
+            const cell = sheet.getRange(`D${startRow + i}`);
+        }
         const cell = sheet.getRange(`B${startRow + i}`);
         const fill = cell.getFormat().getFill().getColor();
 
@@ -92,9 +101,9 @@ function getSheetConfig(sheetName: string): { range: string, editableRanges: str
     } else if(sheetName === "PHONE 7.200 ICU") {
       return {
         range: "A7:I18",
-        editableRanges: ["C4", "C5", "B7:B18", "C7:C18", "D7:D18", "E7:E18", "G7:G18", "L3:L5"],
-        dataRowStart: 7,
-        dataRowEnd: 18
+        editableRanges: ["C4", "C5", "B9:B20", "C9:C20", "D9:D10", "E9:E20", "G9:G20", "Q5:Q7"],
+        dataRowStart: 9,
+        dataRowEnd: 20
     }
 
     
