@@ -14,15 +14,15 @@ function main(workbook: ExcelScript.Workbook) {
     { range: "C2", formula: '=IF(K8="2CDU","2CDU",IF(K8="A",IF(I9>9,CONCATENATE("A.",I9),CONCATENATE("A.0",I9)),CONCATENATE(K8,".0",I9)))' },
     { range: "C3", formula: '=I10' },
     { range: "D8", formula: '=UPPER(CONCATENATE(IF(K4="Yes", "XXXXX", I2), ", ", IF(K4="Yes", "X", LEFT(I3,1))))' },
-    { range: "D9", formula: '=IF(AND(I4="TXP", I6="L"), UPPER(CONCATENATE(I4, " / LIVER")), IF(AND(I4="TXP", I6="R"), UPPER(CONCATENATE(I4, " / RENAL")), IF(I6<>"", UPPER(CONCATENATE(I4, " / TEAM ", I6)), UPPER(I4))))' },
+    { range: "D9", formula: '=IF(AND(I8="ICU", I4="SGT"), IF(I6<>"", "STICU / TEAM " & I6, "STICU /"), IF(AND(I4="TXP", I6="L"), UPPER(CONCATENATE(I4, " / LIVER")), IF(AND(I4="TXP", I6="R"), UPPER(CONCATENATE(I4, " / RENAL")), IF(I6<>"", UPPER(CONCATENATE(I4, " / TEAM ", I6)), UPPER(I4)))))' },
     {range: "D10", formula: '=UPPER(I5)'},
     { range: "A10", formula: '=UPPER("ATTENDING")' },
     { range: "A4", formula: '=IF(K2<>"No",J31,"")' },
     { range: "C4", formula: '=IF(K2<>"No",J31,"")' },
     { range: "F8", formula: '=IF(K2<>"No",J31,"")' },
-    { range: "F2", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="No","")' },
-    { range: "F4", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="No","")' },
-    { range: "F9", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="No","")' }
+    { range: "F2", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="INTR",K31,K3="No","")' },
+    { range: "F4", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="INTR",K31,K3="No","")' },
+    { range: "F9", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="INTR",K31,K3="No","")' }
   ];
 
   // Apply all formulas in one loop
@@ -59,6 +59,7 @@ function resetData (workbook: ExcelScript.Workbook){
   let suppressed = pm.getRange("K4");
   let pav = pm.getRange("K8");
 
+
   let rangesToReset = [
     "I2", "I3", "I4", "I5", "I6", "I8", "I9", "I10",
     "K2", "K3", "K4", "K8"
@@ -66,7 +67,8 @@ function resetData (workbook: ExcelScript.Workbook){
 
   let ranges = ["I2:I6", "I8:I10", "K2:K4", "K8:K8"];
 
- 
+  last.getFormat().setShrinkToFit(true);
+  attending.getFormat().setShrinkToFit(true);
 
   for (let rangeAddress of rangesToReset) {
     let range = pm.getRange(rangeAddress);
@@ -78,6 +80,8 @@ function resetData (workbook: ExcelScript.Workbook){
 
   pm.getRange("K2:K4").getDataValidation()?.clear();
 
+  pm.getRange("I5:I5").getDataValidation()?.clear();
+
   pm.getRange("K8:K8").getDataValidation()?.clear();
 
   const serviceData = service.getDataValidation();
@@ -85,6 +89,8 @@ function resetData (workbook: ExcelScript.Workbook){
   const serviceList: ExcelScript.ListDataValidation = {
     source: "SGE,SGT,SCR,SGO,SGR,TXP,PLA,OMF,VIR,HNS,HM,NEU,BMT,GEMS,GYO,GYN,URO", inCellDropDown: true
   }
+
+  const attendingList: ExcelScript.ListDataValidation = { source: '=INDIRECT(IF(OR($I$4="SGT",$I$4="SGE"),"$AA$33:$AA$130",IF($I$4="SCR","$AB$33:$AB$130",IF($I$4="SGO","$AC$33:$E$130",IF($I$4="URO","$AD$33:$AD$130","$AA$33:$AA$130")))))', inCellDropDown: true}
 
   const teamList: ExcelScript.ListDataValidation = {
     source: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,FF,L,R,ICU", inCellDropDown: true
@@ -117,7 +123,7 @@ function resetData (workbook: ExcelScript.Workbook){
   }
 
   const interpreterList: ExcelScript.ListDataValidation = {
-    source: "SPA, ASL, JAP, No", inCellDropDown: true
+    source: "SPA, ASL, JAP, INTR, No", inCellDropDown: true
   }
 
   const suppressedList: ExcelScript.ListDataValidation = {
@@ -150,6 +156,8 @@ function resetData (workbook: ExcelScript.Workbook){
     list: pavList
   }
 
+  const attendingRule: ExcelScript.DataValidationRule = {list: attendingList}
+
   const nameAlertRule: ExcelScript.DataValidationRule = {
     list: nameAlertList
   }
@@ -174,6 +182,8 @@ function resetData (workbook: ExcelScript.Workbook){
 
   loc.getDataValidation().setRule(locRule);
 
+  attending.getDataValidation().setRule(attendingRule);
+
   pav.getDataValidation().setRule(pavRule);
 
   nameAlert.getDataValidation().setRule(nameAlertRule);
@@ -194,6 +204,8 @@ function resetData (workbook: ExcelScript.Workbook){
 
   pav.getDataValidation().setIgnoreBlanks(true);
 
+  attending.getDataValidation().setIgnoreBlanks(true);
+
   nameAlert.getDataValidation().setIgnoreBlanks(true);
 
   interpreter.getDataValidation().setIgnoreBlanks(true);
@@ -205,6 +217,8 @@ function resetData (workbook: ExcelScript.Workbook){
   first.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
 
   service.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  attending.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
 
   team.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
 
@@ -227,6 +241,8 @@ function resetData (workbook: ExcelScript.Workbook){
   first.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
 
   team.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  attending.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
 
   loc.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
 
