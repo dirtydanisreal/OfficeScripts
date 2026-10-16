@@ -1,0 +1,278 @@
+
+function main(workbook: ExcelScript.Workbook) {
+    // Get the active cell and worksheet.
+    let pm = workbook.getWorksheet("TWO BED DOOR TAG");
+
+    let protection = pm.getProtection();
+
+    protection.pauseProtection("imsorrydave");
+
+    // Formulas for different cells
+  const formulas = [
+    { range: "C1", formula: '=UPPER(CONCATENATE(IF(K4="Yes", "XXXXX", TRIM(I2))))' },
+    { range: "A1", formula: '=UPPER(CONCATENATE(IF(K4="Yes", "XXXXX", TRIM(I2))))' },
+    { range: "A2", formula: '=I10' },
+    { range: "B2", formula: '=IF(I9>9,CONCATENATE("A.",I9),CONCATENATE("A.0",I9))' },
+    { range: "C2", formula: '=IF(K8="2CDU","2CDU",IF(K8="A",IF(I9>9,CONCATENATE("A.",I9),CONCATENATE("A.0",I9)),CONCATENATE(K8,".0",I9)))' },
+    { range: "C3", formula: '=I10' },
+    { range: "D8", formula: '=UPPER(CONCATENATE(IF(K4="Yes", "XXXXX", I2), ", ", IF(K4="Yes", "X", LEFT(I3,1))))' },
+    { range: "D9", formula: '=UPPER(CONCATENATE(IF(K4="Yes", "XXXXX", I4), ", ", IF(K4="Yes", "X", LEFT(I5,1))))' },
+    { range: "A4", formula: '=IF(K2<>"No",J31,"")' },
+    { range: "C4", formula: '=IF(K2<>"No",J31,"")' },
+    { range: "F8", formula: '=IF(K2<>"No",J31,"")' },
+    { range: "F2", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="INTR",K31,K3="No","")' },
+    { range: "F4", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="INTR",K31,K3="No","")' },
+    { range: "F9", formula: '=IFS(K3="SPA",I31,K3="ASL",H31,K3="JAP",G31,K3="INTR",K31,K3="No","")' }
+  ];
+
+  // Apply all formulas in one loop
+  formulas.forEach(item => {
+    pm.getRange(item.range).setFormulaLocal(item.formula);
+  });
+
+  resetData(workbook);
+
+  pm.getRange("A8:A10").getFormat().getFont().setSize(24);
+  pm.getRange("D8:D10").getFormat().getFont().setSize(24);
+
+    // TODO: Write code or use the Insert action button below.
+
+
+  pm.getRange("A8").setValue("PATIENT BED A");
+  pm.getRange("A9").setValue("PATIENT BED B");
+ 
+   // Resume protection
+  protection.resumeProtection();
+}
+
+
+function resetData (workbook: ExcelScript.Workbook){
+  let pm = workbook.getWorksheet("PATIENT_MAKER");
+
+  let last = pm.getRange("I2");
+  let first = pm.getRange("I3");
+  let service = pm.getRange("I4");
+  let attending = pm.getRange("I5");
+  let team = pm.getRange("I6");
+  let loc = pm.getRange("I8");
+  let floor = pm.getRange("I9");
+  let room = pm.getRange("I10");
+  let nameAlert = pm.getRange("K2");
+  let interpreter = pm.getRange("K3");
+  let suppressed = pm.getRange("K4");
+  let pav = pm.getRange("K8");
+
+  let rangesToReset = [
+    "I2", "I3", "I4", "I5", "I6", "I8", "I9", "I10",
+    "K2", "K3", "K4", "K8"
+  ];
+
+  let ranges = ["I2:I6", "I8:I10", "K2:K4", "K8:K8"];
+
+  last.getFormat().setShrinkToFit(true);
+  attending.getFormat().setShrinkToFit(true);
+
+  for (let rangeAddress of rangesToReset) {
+    let range = pm.getRange(rangeAddress);
+    const dataValidation = range.getDataValidation();
+    dataValidation.clear
+  }
+
+  pm.getRange("I2:I10").getDataValidation()?.clear();
+
+  pm.getRange("K2:K4").getDataValidation()?.clear();
+
+  pm.getRange("K8:K8").getDataValidation()?.clear();
+
+  const serviceData = service.getDataValidation();
+
+  const serviceList: ExcelScript.ListDataValidation = {
+    source: "SGE,SGT,SCR,SGO,SGR,TXP,PLA,OMF,VIR,HNS,HM,NEU,BMT,GEMS,GYO,GYN,URO", inCellDropDown: true
+  }
+
+  const teamList: ExcelScript.ListDataValidation = {
+    source: "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,FF,L,R,ICU", inCellDropDown: true
+  }
+
+  const firstList: ExcelScript.ListDataValidation = {
+    source: "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z", inCellDropDown: true
+  }
+
+  const locList: ExcelScript.ListDataValidation = {
+    source: "FLOOR, ICU", inCellDropDown: true
+  }
+
+  const floorList: ExcelScript.ListDataValidation = {
+    source: "5,6,7,8,9,10,11,12", inCellDropDown:true
+  }
+
+  const roomList: ExcelScript.ListDataValidation = {
+    source: "111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242", inCellDropDown: true
+  }
+
+  const pavList: ExcelScript.ListDataValidation = {
+    source: "A,H,2CDU", inCellDropDown: true
+  }
+
+  
+
+  const nameAlertList: ExcelScript.ListDataValidation = {
+    source: "No,Yes", inCellDropDown: true
+  }
+
+  const interpreterList: ExcelScript.ListDataValidation = {
+    source: "SPA, ASL, JAP, INTR, No", inCellDropDown: true
+  }
+
+  const suppressedList: ExcelScript.ListDataValidation = {
+    source: "No,Yes", inCellDropDown:true
+  }
+
+  const serviceRule: ExcelScript.DataValidationRule = {
+    list: serviceList
+  }
+
+  const firstRule: ExcelScript.DataValidationRule ={list: firstList}
+
+  const teamRule: ExcelScript.DataValidationRule = {
+    list: teamList
+  }
+
+  const locRule: ExcelScript.DataValidationRule = {
+    list: locList
+  }
+    
+  const roomRule: ExcelScript.DataValidationRule = {
+    list: roomList
+  }
+
+  const floorRule: ExcelScript.DataValidationRule = {
+    list: floorList
+  }
+
+  const pavRule: ExcelScript.DataValidationRule = {
+    list: pavList
+  }
+
+  const nameAlertRule: ExcelScript.DataValidationRule = {
+    list: nameAlertList
+  }
+
+  const interpreterRule: ExcelScript.DataValidationRule = {
+    list: interpreterList
+  }
+
+  const suppressedRule: ExcelScript.DataValidationRule = {
+    list: suppressedList
+  }
+
+  serviceData.setRule(serviceRule)
+
+  floor.getDataValidation().setRule(floorRule);
+
+  team.getDataValidation().setRule(teamRule);
+
+  room.getDataValidation().setRule(roomRule)
+
+  first.getDataValidation().setRule(firstRule);
+
+  loc.getDataValidation().setRule(locRule);
+
+  pav.getDataValidation().setRule(pavRule);
+
+  nameAlert.getDataValidation().setRule(nameAlertRule);
+
+  interpreter.getDataValidation().setRule(interpreterRule);
+
+  suppressed.getDataValidation().setRule(suppressedRule);
+
+  service.getDataValidation().setIgnoreBlanks(true);
+
+  first.getDataValidation().setIgnoreBlanks(true);
+
+  team.getDataValidation().setIgnoreBlanks(true);
+
+  floor.getDataValidation().setIgnoreBlanks(true);
+
+  room.getDataValidation().setIgnoreBlanks(true);
+
+  pav.getDataValidation().setIgnoreBlanks(true);
+
+  nameAlert.getDataValidation().setIgnoreBlanks(true);
+
+  interpreter.getDataValidation().setIgnoreBlanks(true);
+
+  suppressed.getDataValidation().setIgnoreBlanks(true);
+
+  floor.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: ""});
+
+  first.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  service.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  team.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  loc.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  nameAlert.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  suppressed.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  pav.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  interpreter.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+  room.getDataValidation().setErrorAlert({ showAlert: false, style: ExcelScript.DataValidationAlertStyle.warning, message: "", title: "" });
+
+ service.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  room.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  first.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  team.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  loc.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  pav.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  nameAlert.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  interpreter.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  suppressed.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+  floor.getDataValidation().setPrompt({ showPrompt: false, message: null, title: null });
+
+
+
+  }
+
+function allowEdit(workbook: ExcelScript.Workbook) {
+  let pm = workbook.getWorksheet("TWO BED DOOR TAG");
+
+  // Array of range addresses to be made editable
+  let ranges = ["I2:I6", "I8:I10", "K2:K4", "K8:K8"];
+
+  // Options for the allow edit ranges (no password)
+  const allowEditSettings: ExcelScript.AllowEditRangeOptions = {
+    password: null
+  };
+
+  // Get the worksheet protection object
+  const protection = pm.getProtection();
+
+  // Loop through the range addresses and add each as an allow-edit range
+  for (let rangeAddress of ranges) {
+    let range = pm.getRange(rangeAddress); // Get the actual Range object
+
+
+    const title = rangeAddress; // Unique title for each range
+
+    let editRange = protection.getAllowEditRanges();
+    
+      protection.addAllowEditRange(rangeAddress, rangeAddress, allowEditSettings);
+  }
+}
+
+
